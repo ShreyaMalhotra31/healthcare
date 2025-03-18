@@ -15,9 +15,10 @@ import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "./lib/queryClient";
 import { setupIndexedDB } from "./lib/indexedDB";
 
-// Context for user data
+// Context imports
 import { createContext } from "react";
 
+// User Context
 export interface User {
   id: number;
   username: string;
@@ -38,7 +39,7 @@ export const UserContext = createContext<UserContextType>({
   loading: true,
 });
 
-// Context for modals
+// Modal Context
 interface ModalContextType {
   showPregnancyAssessment: boolean;
   setShowPregnancyAssessment: (show: boolean) => void;
@@ -57,7 +58,7 @@ export const ModalContext = createContext<ModalContextType>({
   setShowChildHealthAssessment: () => {},
 });
 
-// Context for connection status
+// Connection Context
 export interface ConnectionContextType {
   isOnline: boolean;
   pendingSyncs: number;

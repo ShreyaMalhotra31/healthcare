@@ -2,7 +2,7 @@ import { ReactNode, useContext } from "react";
 import Header from "./Header";
 import TabNavigation from "./TabNavigation";
 import Footer from "./Footer";
-import { UserContext, ConnectionContext } from "@/App";
+import { UserContext, ConnectionContext } from "../App";
 import { useToast } from "@/hooks/use-toast";
 import { useQuery } from "@tanstack/react-query";
 import { Loader2 } from "lucide-react";
