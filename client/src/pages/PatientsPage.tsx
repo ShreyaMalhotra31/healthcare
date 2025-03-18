@@ -42,14 +42,21 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 // Form schema for adding a new patient
 const patientSchema = z.object({
   name: z.string().min(1, "Name is required"),
-  age: z.string().transform(val => parseInt(val, 10)),
+  age: z.string().min(1, "Age is required"),
   gender: z.string().min(1, "Gender is required"),
   address: z.string().min(1, "Address is required"),
   contactNumber: z.string().optional(),
   healthConcern: z.string().min(1, "Health concern is required"),
 });
 
-type PatientFormValues = z.infer<typeof patientSchema>;
+type PatientFormValues = {
+  name: string;
+  age: string;
+  gender: string;
+  address: string;
+  contactNumber?: string;
+  healthConcern: string;
+};
 
 const PatientsPage = () => {
   const { user } = useContext(UserContext);
@@ -83,14 +90,15 @@ const PatientsPage = () => {
       if (!user?.id) {
         throw new Error("User not authenticated");
       }
-      // Ensure all required fields are present
       const patientData = {
         ...data,
-        riskLevel: "normal", // Default risk level
-        userId: user.id, // Add user ID from context
+        age: parseInt(data.age),
+        riskLevel: "normal",
+        userId: user.id,
       };
       console.log("Submitting patient data:", patientData);
-      return apiRequest("POST", "/api/patients", patientData);
+      const response = await apiRequest("POST", "/api/patients", patientData);
+      return response;
     },
     onSuccess: (data) => {
       console.log("Patient added successfully:", data);
