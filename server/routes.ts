@@ -71,13 +71,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       console.log("Login successful for user:", username, "with id:", user.id);
       
-      if (req.session) {
-        req.session.userId = user.id;
-        console.log("Session created with userId:", user.id);
-        console.log("Session cookie:", req.session.cookie);
-      } else {
-        console.log("WARNING: No session object available!");
-      }
+      req.session.userId = user.id;
+      await new Promise((resolve) => req.session.save(resolve));
+      console.log("Session created with userId:", user.id);
+      console.log("Session cookie:", req.session.cookie);
       
       // Return user data without password
       const { password: _, ...userData } = user;

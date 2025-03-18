@@ -16,16 +16,17 @@ app.use(
     cookie: { 
       maxAge: 86400000, // 24 hours
       httpOnly: true,
-      secure: false, // Set to true in production with HTTPS
+      secure: false,
       sameSite: 'lax',
-      path: '/'
+      path: '/',
+      domain: undefined // Let the browser set this automatically
     },
     store: new MemoryStore({
-      checkPeriod: 86400000, // prune expired entries every 24h
+      checkPeriod: 86400000
     }),
-    resave: true,
+    resave: false,
     rolling: true,
-    saveUninitialized: true,
+    saveUninitialized: false, // Only save sessions when we have data
     secret: "svasthya-saathi-secret-key-12345",
     name: "svasthya.sid"
   })
