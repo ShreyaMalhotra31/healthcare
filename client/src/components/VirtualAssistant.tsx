@@ -4,7 +4,7 @@ import { UserContext, ConnectionContext } from "@/App";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { queryClient } from "@/lib/queryClient";
 import { processChatMessage } from "@/lib/openai";
-import { Loader2 } from "lucide-react";
+import { Loader2, Mic, Send, Timer, Volume2, Languages, User, Bot } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import {
   startSpeechRecognition,
@@ -26,45 +26,49 @@ const VirtualAssistant = () => {
   const [isListening, setIsListening] = useState(false);
   const [isSpeaking, setIsSpeaking] = useState(false);
   const [translateEnabled, setTranslateEnabled] = useState(false);
+  const [localMessages, setLocalMessages] = useState<ChatMessage[]>([
+    {
+      id: 0,
+      userId: user?.id || 0,
+      message: "Namaste! I'm your health assistant. I can help with pregnancy assessments, anemia detection, and finding government healthcare schemes. How can I help you today?",
+      isUserMessage: false,
+      timestamp: new Date().toISOString(),
+      relatedPatientId: null,
+    }
+  ]);
   
+  // Define an interface for chat messages
+  interface ChatMessage {
+    id: number;
+    userId: number;
+    message: string;
+    isUserMessage: boolean;
+    timestamp: string;
+    relatedPatientId?: number | null;
+  }
+
   // Get chat messages
-  const { data: chatMessages, isLoading: isLoadingMessages } = useQuery({
+  const { data: chatMessages, isLoading: isLoadingMessages } = useQuery<ChatMessage[]>({
     queryKey: ["/api/chat-history"],
     enabled: !!user && isOnline,
   });
   
   // Use local messages if offline
-  const [offlineMessages, setOfflineMessages] = useState<any[]>([]);
+  const [offlineMessages, setOfflineMessages] = useState<ChatMessage[]>([]);
   
   useEffect(() => {
     if (!isOnline) {
       getChatHistoryOffline().then(messages => {
-        setOfflineMessages(messages);
+        if (messages && Array.isArray(messages) && messages.length > 0) {
+          setOfflineMessages(messages as ChatMessage[]);
+        }
       });
     }
   }, [isOnline]);
   
   // Combine server messages or use offline messages
-  const messages = isOnline ? chatMessages : offlineMessages;
-  
-  // Add initial greeting if no messages
-  useEffect(() => {
-    if (messages?.length === 0 && user) {
-      const greeting = {
-        id: 0,
-        userId: user.id,
-        message: t("Namaste! I'm your health assistant. I can help with pregnancy assessments, anemia detection, and finding government healthcare schemes. How can I help you today?"),
-        isUserMessage: false,
-        timestamp: new Date().toISOString(),
-      };
-      
-      if (isOnline) {
-        queryClient.setQueryData(["/api/chat-history"], [greeting]);
-      } else {
-        setOfflineMessages([greeting]);
-      }
-    }
-  }, [messages, user, t, isOnline]);
+  const messages: ChatMessage[] = isOnline && chatMessages ? chatMessages : 
+                  (offlineMessages.length > 0 ? offlineMessages : localMessages);
   
   // Mutation for sending messages
   const sendMessageMutation = useMutation({
@@ -82,9 +86,32 @@ const VirtualAssistant = () => {
       
       return processChatMessage(message);
     },
-    onSuccess: (response) => {
-      // Update query cache with new message
-      queryClient.invalidateQueries({ queryKey: ["/api/chat-history"] });
+    onSuccess: (response, variables) => {
+      // Update local messages if server messages are not available
+      if (!chatMessages) {
+        setLocalMessages(prev => [
+          ...prev,
+          {
+            id: prev.length + 1,
+            userId: user?.id || 0,
+            message: variables,
+            isUserMessage: true,
+            timestamp: new Date().toISOString(),
+            relatedPatientId: null,
+          },
+          {
+            id: prev.length + 2,
+            userId: user?.id || 0,
+            message: response,
+            isUserMessage: false,
+            timestamp: new Date().toISOString(),
+            relatedPatientId: null,
+          }
+        ]);
+      } else {
+        // Update query cache with new message
+        queryClient.invalidateQueries({ queryKey: ["/api/chat-history"] });
+      }
       
       // Read out response if speaking enabled
       if (isSpeaking) {
@@ -182,11 +209,11 @@ const VirtualAssistant = () => {
   };
 
   return (
-    <section>
-      <div className="bg-white rounded-lg shadow-sm mb-4">
+    <section className="mb-6">
+      <div className="bg-white rounded-lg shadow-md">
         <div className="p-4 border-b border-neutral-200">
-          <h3 className="text-base font-medium mb-1">{t("ai_assistant")}</h3>
-          <p className="text-sm text-neutral-800">{t("ask_health_questions")}</p>
+          <h3 className="text-lg font-semibold mb-1">AI Health Assistant</h3>
+          <p className="text-sm text-neutral-600">Ask questions about healthcare, assessments, or schemes</p>
         </div>
 
         <div className="p-4 max-h-64 overflow-y-auto space-y-4" id="chat-messages">
@@ -194,14 +221,16 @@ const VirtualAssistant = () => {
             <div className="flex justify-center">
               <Loader2 className="h-6 w-6 animate-spin text-primary" />
             </div>
-          ) : (
-            messages?.map((msg: any, index: number) => (
+          ) : Array.isArray(messages) && messages.length > 0 ? (
+            messages.map((msg, index) => (
               msg.isUserMessage ? (
                 <UserMessage key={index} message={msg.message} />
               ) : (
                 <AssistantMessage key={index} message={msg.message} />
               )
             ))
+          ) : (
+            <AssistantMessage message="Namaste! I'm your health assistant. I can help with pregnancy assessments, anemia detection, and finding government healthcare schemes. How can I help you today?" />
           )}
           
           {sendMessageMutation.isPending && (
@@ -212,50 +241,55 @@ const VirtualAssistant = () => {
         </div>
 
         <div className="p-4 border-t border-neutral-200">
-          <div className="flex items-center bg-neutral-100 p-1 rounded-full">
+          <div className="flex items-center bg-neutral-100 p-2 rounded-lg">
             <button
+              type="button"
               className={`p-2 rounded-full ${isListening ? "bg-accent text-white" : "hover:bg-neutral-200"}`}
               onClick={toggleVoiceInput}
             >
-              <span className="material-icons text-neutral-800">mic</span>
+              <Mic size={18} className={isListening ? "text-white" : "text-neutral-600"} />
             </button>
             <input
               type="text"
               className="flex-grow bg-transparent px-3 py-2 focus:outline-none text-sm"
-              placeholder={isListening ? t("listening") : t("type_speak_question")}
+              placeholder={isListening ? "Listening..." : "Type or speak your question..."}
               value={question}
               onChange={(e) => setQuestion(e.target.value)}
               onKeyDown={(e) => e.key === "Enter" && sendMessage()}
               disabled={isListening}
             />
             <button
-              className="bg-primary text-white p-2 rounded-full"
+              type="button"
+              className={`p-2 rounded-full ${!question.trim() || sendMessageMutation.isPending ? "bg-neutral-300 text-neutral-500" : "bg-primary text-white"}`}
               onClick={sendMessage}
               disabled={!question.trim() || sendMessageMutation.isPending}
             >
-              <span className="material-icons">
-                {sendMessageMutation.isPending ? "hourglass_empty" : "send"}
-              </span>
+              {sendMessageMutation.isPending ? 
+                <Timer size={18} /> : 
+                <Send size={18} />
+              }
             </button>
           </div>
-          <div className="flex justify-between mt-2">
+          <div className="flex justify-between mt-3 px-1">
             <div className="flex space-x-4">
               <button
+                type="button"
                 className={`text-xs ${translateEnabled ? "text-accent" : "text-primary"} flex items-center`}
                 onClick={toggleTranslation}
               >
-                <span className="material-icons text-sm mr-1">translate</span>
-                {t("translate")}
+                <Languages size={14} className="mr-1" />
+                Translate
               </button>
               <button
+                type="button"
                 className={`text-xs ${isSpeaking ? "text-accent" : "text-primary"} flex items-center`}
                 onClick={toggleSpeaking}
               >
-                <span className="material-icons text-sm mr-1">volume_up</span>
-                {t("listen")}
+                <Volume2 size={14} className="mr-1" />
+                Listen
               </button>
             </div>
-            <div className="text-xs text-neutral-800">
+            <div className="text-xs text-neutral-600">
               {i18n.language === "en" ? "Hindi" : "English"}
             </div>
           </div>
@@ -277,7 +311,7 @@ const UserMessage = ({ message }: MessageProps) => {
         <p className="text-sm">{message}</p>
       </div>
       <div className="bg-accent text-white rounded-full w-8 h-8 flex items-center justify-center ml-3 flex-shrink-0">
-        <span className="material-icons text-sm">person</span>
+        <User size={16} />
       </div>
     </div>
   );
@@ -287,7 +321,7 @@ const AssistantMessage = ({ message, isLoading }: MessageProps) => {
   return (
     <div className="flex items-start">
       <div className="bg-primary text-white rounded-full w-8 h-8 flex items-center justify-center mr-3 flex-shrink-0">
-        <span className="material-icons text-sm">smart_toy</span>
+        <Bot size={16} />
       </div>
       <div className="bg-neutral-100 p-3 rounded-lg rounded-tl-none max-w-[85%]">
         {isLoading ? (
