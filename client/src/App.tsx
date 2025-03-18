@@ -111,31 +111,53 @@ function App() {
   
   // Check authentication on app start
   useEffect(() => {
+    let isMounted = true;
+    
     async function checkAuth() {
       try {
+        console.log("Checking authentication status...");
         // Use regular fetch instead of apiRequest to avoid throwing errors
         const response = await fetch("/api/auth/me", {
           credentials: "include",
         });
         
+        console.log("Auth check response:", response.status);
+        
         if (response.ok) {
           const userData = await response.json();
-          setUser(userData);
+          console.log("User authenticated:", userData);
+          if (isMounted) setUser(userData);
         } else {
+          console.log("User not authenticated");
           // Not authenticated, show as logged out
-          setUser(null);
+          if (isMounted) setUser(null);
         }
       } catch (error) {
         console.error("Authentication check error:", error);
         // On error, still clear the loading state and show as logged out
-        setUser(null);
+        if (isMounted) setUser(null);
       } finally {
         // Always clear loading state
-        setLoading(false);
+        console.log("Setting loading to false");
+        if (isMounted) setLoading(false);
       }
     }
     
+    // Set a timeout to ensure loading state is cleared even if fetch hangs
+    const timeoutId = setTimeout(() => {
+      console.log("Auth check timeout reached");
+      if (isMounted) {
+        setLoading(false);
+        setUser(null);
+      }
+    }, 5000);
+    
     checkAuth();
+    
+    return () => {
+      isMounted = false;
+      clearTimeout(timeoutId);
+    };
   }, []);
   
   // Handle online/offline events

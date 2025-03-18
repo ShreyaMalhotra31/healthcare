@@ -16,12 +16,17 @@ const AppShell = ({ children }: AppShellProps) => {
   const { isOnline } = useContext(ConnectionContext);
   const { toast } = useToast();
 
+  console.log("AppShell render - user:", !!user, "loading:", loading);
+
   // Login form state
   if (loading) {
     return (
       <div className="min-h-screen flex flex-col items-center justify-center bg-neutral-100 text-neutral-800">
         <Loader2 className="animate-spin h-8 w-8 text-primary mb-4" />
         <p className="text-sm">Loading Svasthya Saathi...</p>
+        <p className="text-xs text-gray-500 mt-2">
+          If this takes too long, refresh the page.
+        </p>
       </div>
     );
   }
