@@ -80,11 +80,14 @@ const PatientsPage = () => {
   // Add patient mutation
   const addPatientMutation = useMutation({
     mutationFn: async (data: PatientFormValues) => {
+      if (!user?.id) {
+        throw new Error("User not authenticated");
+      }
       // Ensure all required fields are present
       const patientData = {
         ...data,
         riskLevel: "normal", // Default risk level
-        userId: user?.id, // Add user ID from context
+        userId: user.id, // Add user ID from context
       };
       console.log("Submitting patient data:", patientData);
       return apiRequest("POST", "/api/patients", patientData);
