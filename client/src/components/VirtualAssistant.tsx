@@ -251,7 +251,7 @@ const VirtualAssistant = () => {
             </button>
             <input
               type="text"
-              className="flex-grow bg-transparent px-3 py-2 focus:outline-none text-sm"
+              className="flex-grow bg-transparent px-3 py-2 focus:outline-none text-sm text-neutral-800"
               placeholder={isListening ? "Listening..." : "Type or speak your question..."}
               value={question}
               onChange={(e) => setQuestion(e.target.value)}
