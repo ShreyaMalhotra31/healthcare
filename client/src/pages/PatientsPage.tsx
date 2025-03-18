@@ -80,9 +80,17 @@ const PatientsPage = () => {
   // Add patient mutation
   const addPatientMutation = useMutation({
     mutationFn: async (data: PatientFormValues) => {
-      return apiRequest("POST", "/api/patients", data);
+      // Ensure all required fields are present
+      const patientData = {
+        ...data,
+        riskLevel: "normal", // Default risk level
+        userId: user?.id, // Add user ID from context
+      };
+      console.log("Submitting patient data:", patientData);
+      return apiRequest("POST", "/api/patients", patientData);
     },
-    onSuccess: () => {
+    onSuccess: (data) => {
+      console.log("Patient added successfully:", data);
       queryClient.invalidateQueries({ queryKey: ["/api/patients"] });
       setShowAddPatient(false);
       form.reset();
@@ -91,7 +99,8 @@ const PatientsPage = () => {
         description: "Patient added successfully",
       });
     },
-    onError: () => {
+    onError: (error) => {
+      console.error("Error adding patient:", error);
       toast({
         title: "Error",
         description: "Failed to add patient. Please try again.",
@@ -102,6 +111,14 @@ const PatientsPage = () => {
   
   // Handle form submission
   const onSubmit = (data: PatientFormValues) => {
+    if (!user?.id) {
+      toast({
+        title: "Error",
+        description: "You must be logged in to add patients",
+        variant: "destructive",
+      });
+      return;
+    }
     addPatientMutation.mutate(data);
   };
 
