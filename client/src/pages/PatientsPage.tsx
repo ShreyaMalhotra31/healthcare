@@ -84,9 +84,12 @@ const PatientsPage = () => {
     },
   });
   
-  // Add patient mutation
+  // Add patient mutation  
   const addPatientMutation = useMutation({
     mutationFn: async (data: PatientFormValues) => {
+      if (!user) {
+        throw new Error("Not authenticated");
+      }
       const patientData = {
         ...data,
         age: parseInt(data.age),
