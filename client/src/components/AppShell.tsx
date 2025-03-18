@@ -67,13 +67,28 @@ const LoginForm = () => {
         credentials: "include",
       });
 
+      console.log("Login response status:", response.status, response.statusText);
+      console.log("Response headers:", [...response.headers.entries()]);
+      
       const responseData = await response.json();
-      console.log("Login response:", responseData);
+      console.log("Login response body:", responseData);
 
       if (!response.ok) {
         throw new Error(responseData.message || "Invalid credentials");
       }
 
+      console.log("Login successful, setting user:", responseData);
+      
+      // Verify user was successfully authenticated immediately
+      fetch("/api/auth/me", { credentials: "include" })
+        .then(r => r.json())
+        .then(data => {
+          console.log("Auth verification result:", data);
+        })
+        .catch(err => {
+          console.error("Auth verification failed:", err);
+        });
+      
       setUser(responseData);
       toast({
         title: "Login successful",

@@ -55,14 +55,28 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const { username, password } = req.body;
       
+      console.log("Login attempt for:", username);
+      
       const user = await storage.getUserByUsername(username);
       
-      if (!user || user.password !== password) {
-        return res.status(401).json({ message: "Invalid credentials" });
+      if (!user) {
+        console.log("User not found:", username);
+        return res.status(401).json({ message: "Invalid credentials - user not found" });
       }
+      
+      if (user.password !== password) {
+        console.log("Password mismatch for user:", username);
+        return res.status(401).json({ message: "Invalid credentials - password mismatch" });
+      }
+      
+      console.log("Login successful for user:", username, "with id:", user.id);
       
       if (req.session) {
         req.session.userId = user.id;
+        console.log("Session created with userId:", user.id);
+        console.log("Session cookie:", req.session.cookie);
+      } else {
+        console.log("WARNING: No session object available!");
       }
       
       // Return user data without password
@@ -88,16 +102,29 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
   
   app.get("/api/auth/me", async (req, res) => {
-    if (!req.session || !req.session.userId) {
-      return res.status(401).json({ message: "Not authenticated" });
+    console.log("Checking authentication status");
+    console.log("Session:", req.session);
+    
+    if (!req.session) {
+      console.log("No session object found");
+      return res.status(401).json({ message: "Not authenticated - no session" });
+    }
+    
+    if (!req.session.userId) {
+      console.log("No userId in session");
+      return res.status(401).json({ message: "Not authenticated - no userId" });
     }
     
     try {
+      console.log("Fetching user with ID:", req.session.userId);
       const user = await storage.getUser(req.session.userId);
       
       if (!user) {
+        console.log("User not found for ID:", req.session.userId);
         return res.status(404).json({ message: "User not found" });
       }
+      
+      console.log("User found:", user.username);
       
       // Return user data without password
       const { password: _, ...userData } = user;

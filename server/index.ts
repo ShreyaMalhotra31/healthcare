@@ -13,13 +13,21 @@ app.use(express.urlencoded({ extended: false }));
 // Set up session middleware
 app.use(
   session({
-    cookie: { maxAge: 86400000 }, // 24 hours
+    cookie: { 
+      maxAge: 86400000, // 24 hours
+      httpOnly: true,
+      secure: false, // Set to true in production with HTTPS
+      sameSite: 'lax',
+      path: '/'
+    },
     store: new MemoryStore({
       checkPeriod: 86400000, // prune expired entries every 24h
     }),
-    resave: false,
-    saveUninitialized: false,
-    secret: "svasthya-saathi-secret",
+    resave: true,
+    rolling: true,
+    saveUninitialized: true,
+    secret: "svasthya-saathi-secret-key-12345",
+    name: "svasthya.sid"
   })
 );
 
