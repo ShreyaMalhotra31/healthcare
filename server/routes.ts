@@ -2,6 +2,23 @@ import type { Express, Request, Response } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { ZodError } from "zod";
+import session from "express-session";
+
+// Extend Express Request type to include session
+declare module "express-session" {
+  interface SessionData {
+    userId: number;
+  }
+}
+
+// Extend Express Request type
+declare global {
+  namespace Express {
+    interface Request {
+      session: session.Session & Partial<session.SessionData>;
+    }
+  }
+}
 import {
   insertUserSchema,
   insertPatientSchema,
