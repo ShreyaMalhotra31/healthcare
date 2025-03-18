@@ -112,13 +112,24 @@ function App() {
   useEffect(() => {
     async function checkAuth() {
       try {
-        const response = await apiRequest("GET", "/api/auth/me");
-        const userData = await response.json();
-        setUser(userData);
+        // Use regular fetch instead of apiRequest to avoid throwing errors
+        const response = await fetch("/api/auth/me", {
+          credentials: "include",
+        });
+        
+        if (response.ok) {
+          const userData = await response.json();
+          setUser(userData);
+        } else {
+          // Not authenticated, show as logged out
+          setUser(null);
+        }
       } catch (error) {
-        // Not authenticated, show as logged out
+        console.error("Authentication check error:", error);
+        // On error, still clear the loading state and show as logged out
         setUser(null);
       } finally {
+        // Always clear loading state
         setLoading(false);
       }
     }

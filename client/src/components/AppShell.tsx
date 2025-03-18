@@ -51,6 +51,8 @@ const LoginForm = () => {
     const password = formData.get("password") as string;
 
     try {
+      console.log("Attempting login with:", { username, password });
+      
       const response = await fetch("/api/auth/login", {
         method: "POST",
         headers: {
@@ -60,17 +62,20 @@ const LoginForm = () => {
         credentials: "include",
       });
 
+      const responseData = await response.json();
+      console.log("Login response:", responseData);
+
       if (!response.ok) {
-        throw new Error("Login failed");
+        throw new Error("Login failed: " + (responseData.message || "Unknown error"));
       }
 
-      const userData = await response.json();
-      setUser(userData);
+      setUser(responseData);
       toast({
         title: "Login successful",
-        description: `Welcome, ${userData.fullName}!`,
+        description: `Welcome, ${responseData.fullName}!`,
       });
     } catch (error) {
+      console.error("Login error:", error);
       toast({
         title: "Login failed",
         description: "Invalid credentials. Please try again.",
