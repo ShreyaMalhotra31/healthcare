@@ -1,4 +1,4 @@
-import { ReactNode, useContext } from "react";
+import React, { ReactNode, useContext, useState } from "react";
 import Header from "./Header";
 import TabNavigation from "./TabNavigation";
 import Footer from "./Footer";
@@ -43,15 +43,20 @@ const AppShell = ({ children }: AppShellProps) => {
 const LoginForm = () => {
   const { setUser } = useContext(UserContext);
   const { toast } = useToast();
+  const [isLoading, setIsLoading] = useState(false);
+  const [loginError, setLoginError] = useState("");
 
   const handleLogin = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
+    setIsLoading(true);
+    setLoginError("");
+    
     const formData = new FormData(e.currentTarget);
     const username = formData.get("username") as string;
     const password = formData.get("password") as string;
 
     try {
-      console.log("Attempting login with:", { username, password });
+      console.log("Attempting login with:", { username });
       
       const response = await fetch("/api/auth/login", {
         method: "POST",
@@ -66,7 +71,7 @@ const LoginForm = () => {
       console.log("Login response:", responseData);
 
       if (!response.ok) {
-        throw new Error("Login failed: " + (responseData.message || "Unknown error"));
+        throw new Error(responseData.message || "Invalid credentials");
       }
 
       setUser(responseData);
@@ -74,13 +79,16 @@ const LoginForm = () => {
         title: "Login successful",
         description: `Welcome, ${responseData.fullName}!`,
       });
-    } catch (error) {
+    } catch (error: any) {
       console.error("Login error:", error);
+      setLoginError(error.message || "Login failed. Please try again.");
       toast({
         title: "Login failed",
-        description: "Invalid credentials. Please try again.",
+        description: error.message || "Invalid credentials. Please try again.",
         variant: "destructive",
       });
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -142,9 +150,17 @@ const LoginForm = () => {
 
               <button
                 type="submit"
-                className="w-full bg-primary text-white py-2.5 rounded-lg font-medium"
+                disabled={isLoading}
+                className="w-full bg-primary text-white py-2.5 rounded-lg font-medium flex items-center justify-center"
               >
-                Login
+                {isLoading ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Logging in...
+                  </>
+                ) : (
+                  "Login"
+                )}
               </button>
             </div>
           </form>
